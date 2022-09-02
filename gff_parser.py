@@ -20,7 +20,7 @@ parser.add_argument('--annotation', default='gene_annot.txt', help='Output: Func
 parser.add_argument('--process-all', default=False, action="store_true", help="Prodigal returns anything it finds, including tRNAs and\
                     other genetic structures that are not nessecarily translatable, and can cause downstream issues especially if you would like to\
                     use your annotations in contigs databases for pangenomic analyses. As a precation this script only recovers open reading frames\
-                    identifie dby Prodigal. Using this flag, you can import everything.")
+                    identified by Prodigal. Using this flag, you can import everything.")
 parser.add_argument('--source', default='Prokka', help='Source of gene calls (Prokka or IMG) (Default: Prokka)')
 
 args = parser.parse_args()
@@ -36,6 +36,8 @@ if SOURCE == 'Prokka':
     SEP = ':'
 elif SOURCE == 'IMG':
     SEP = ' '
+elif SOURCE == 'IMGV2':
+    SEP = '_'
 else:
     print(SOURCE, "is not an available gene caller.")
     sys.exit()
@@ -61,11 +63,15 @@ features_missing_product_or_note = 0
 for feature in db.all_features():
     total_num_features += 1
     # determine source
-    source, version = feature.source.split(SEP, 1)
+    if SOURCE == "IMGV2":
+        source = "_".join(feature.source.split("_")[:2]) # results in img_core
+        version = feature.source.split("_")[2] # results in v400
+    else:
+        source, version = feature.source.split(SEP, 1)
 
     # move on if not Prodigal, unless the user wants it badly
     if not args.process_all:
-        if source != 'Prodigal':
+        if source != 'Prodigal' and source != 'img_core':
             continue
 
     start = feature.start - 1
